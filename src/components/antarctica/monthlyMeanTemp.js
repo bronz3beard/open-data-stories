@@ -201,7 +201,7 @@ return (
             { name: "Casey", symbol: { fill: "blue" } },
             { name: "Macquarie Island", symbol: { fill: "green" } },
             { name: "Spit Bay", symbol: { fill: "purple" } },
-            { name: "Atlas Cove", symbol: { fill: "yellow" } },
+            { name: "Atlas Cove", symbol: { fill: "brown" } },
           ]}
         />
         <VictoryAxis
@@ -241,7 +241,7 @@ return (
           // }}
           data={dataFiltered}
           labels={({ datum }) => `${datum.Value}°C`}
-          colorScale={["red", "orange", "blue", "green", "purple", "yellow"]}
+          colorScale={["red", "orange", "blue", "green", "purple", "brown"]}
         >
           <VictoryLine interpolation="monotoneY" />
           <VictoryScatter
@@ -253,7 +253,7 @@ return (
               data: {
                 fill: ({ datum }) => {
                   const SpitBay =
-                    datum.Place === "Spit Bay" ? "purple" : "yellow";
+                    datum.Place === "Spit Bay" ? "purple" : "brown";
                   const MacquarieIsland =
                     datum.Place === "Macquarie Island" ? "green" : SpitBay;
                   const Casey =
