@@ -118,7 +118,7 @@ if (isLoading) {
 }
 
 return (
-  <div>
+  <div style={{ padding: `${1.5}rem ${0} ${0} ${0}` }}>
     <h1>Monthly mean air temperatures for Australian Antarctic Stations</h1>
     <div style={{ padding: `${5}rem ${0} ${2}rem ${0}` }}>
       <label
