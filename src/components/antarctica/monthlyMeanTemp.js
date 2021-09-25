@@ -22,244 +22,254 @@ import {
 
 const MonthlyMeanTemp = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [yearFilterValue, setYearFilterValue] = useState("2020");
-  const [anomalyFilterValue, setAnomalyFilterValue] = useState("Anomaly");
-  const [siteFilterValue, setSiteFilterValue] = useState("");
+const [dataIsFiltering, setDataIsFiltering] = useState(false);
 
-  const [antarctica, setAntarctica] = useState([]);
+const [yearFilterValue, setYearFilterValue] = useState("2020");
+const [anomalyFilterValue, setAnomalyFilterValue] = useState("Anomaly");
+const [siteFilterValue, setSiteFilterValue] = useState("");
 
-  const [graphXAxis, setGraphXAxis] = useState([]);
-  const [graphYAxis, setGraphYAxis] = useState([]);
+const [antarctica, setAntarctica] = useState([]);
 
-  useEffect(() => {
-    const itemsRef = firebase.database().ref("antarctica/");
+const [graphXAxis, setGraphXAxis] = useState([]);
+const [graphYAxis, setGraphYAxis] = useState([]);
 
-    const antarcticaState = [];
+useEffect(() => {
+  const itemsRef = firebase.database().ref("antarctica/");
 
-    itemsRef
-      .once("value")
-      .then((snapshot) => {
-        const items = snapshot.val();
+  const antarcticaState = [];
 
-        for (const item in items) {
-          const field = items[item];
-          const fbId = item;
+  itemsRef
+    .once("value")
+    .then((snapshot) => {
+      const items = snapshot.val();
 
-          antarcticaState.push({
-            ...field,
-            fbId,
-          });
-        }
+      for (const item in items) {
+        const field = items[item];
+        const fbId = item;
 
-        if (items && antarcticaState) {
-          setAntarctica(
-            antarcticaState
-              .filter((item) => !item.Parameter.includes(anomalyFilterValue))
-              .filter((item) => item.Date.includes(yearFilterValue))
-              .map((item) => ({ ...item, y: item.Value, x: item.Date }))
-          );
-          // change this to change name along the left side of the graph - filter out 0 falsy values
-          setGraphYAxis(antarcticaState.map((item) => ({ y: item.Value })));
+        antarcticaState.push({
+          ...field,
+          fbId,
+        });
+      }
 
-          // change this to change name along the bottom of the graph
-          setGraphXAxis(
-            antarcticaState
-              .filter(
-                (value, index, self) =>
-                  self
-                    .map((item) => item.Date.split("-")[1])
-                    .indexOf(value.Date.split("-")[1]) === index
-              )
-              .map((item) => ({
-                x: item.Date.split("-")[1],
-              }))
-          );
-          setIsLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error("🚀 ~ file: index.js ~ line 93 ~ .then ~ error", error);
-      });
-  }, [isLoading, yearFilterValue, anomalyFilterValue]);
+      if (items && antarcticaState) {
+        setAntarctica(
+          antarcticaState
+            .filter((item) => !item.Parameter.includes(anomalyFilterValue))
+            .filter((item) => item.Date.includes(yearFilterValue))
+            .map((item) => ({ ...item, y: item.Value, x: item.Date }))
+        );
+        // change this to change name along the left side of the graph - filter out 0 falsy values
+        setGraphYAxis(antarcticaState.map((item) => ({ y: item.Value })));
 
-  const handleYearFilterValueChange = (event) => {
-    const value = event.target.value;
-    setIsLoading(true);
-    setYearFilterValue(value);
-  };
+        // change this to change name along the bottom of the graph
+        setGraphXAxis(
+          antarcticaState
+            .filter(
+              (value, index, self) =>
+                self
+                  .map((item) => item.Date.split("-")[1])
+                  .indexOf(value.Date.split("-")[1]) === index
+            )
+            .map((item) => ({
+              x: item.Date.split("-")[1],
+            }))
+        );
+        setIsLoading(false);
+        setDataIsFiltering(false);
+      }
+    })
+    .catch((error) => {
+      console.error("🚀 ~ file: index.js ~ line 93 ~ .then ~ error", error);
+    });
+}, [isLoading, yearFilterValue, anomalyFilterValue]);
 
-  const handleLegendClick = (event) => {
-    const name = event.target.name;
-    if (name) {
-      setSiteFilterValue("");
-    } else {
-      setSiteFilterValue(event.target.innerHTML);
-    }
-  };
-  // Date: "April-1948"
-  // Latitude: "54° 37.2' S"
-  // Longitude: "158° 51.7' E"
-  // Parameter: "Air Temperature"
-  // Place: "Macquarie Island"
-  // "Unit of Measure": "deg C"
-  // Value: 5
-  // fbId: "0"
+const handleYearFilterValueChange = (event) => {
+  const value = event.target.value;
 
-  const dataFiltered = !siteFilterValue
-    ? antarctica
-    : dataFilter(antarctica, siteFilterValue, "Place");
+  setYearFilterValue(value);
+  setDataIsFiltering(!dataIsFiltering);
+};
 
-  if (isLoading) {
-    return <div>Loading...</div>;
+const handleLegendClick = (event) => {
+  const name = event.target.name;
+  if (name) {
+    setSiteFilterValue("");
+  } else {
+    setSiteFilterValue(event.target.innerHTML);
   }
+};
+// Date: "April-1948"
+// Latitude: "54° 37.2' S"
+// Longitude: "158° 51.7' E"
+// Parameter: "Air Temperature"
+// Place: "Macquarie Island"
+// "Unit of Measure": "deg C"
+// Value: 5
+// fbId: "0"
 
-  return (
-    <div>
-      <h1>Monthly mean air temperatures for Australian Antarctic Stations</h1>
-      <div style={{ padding: `${5}rem ${0} ${2}rem ${0}` }}>
-        <label
-          style={{ position: "relative", padding: `${0} ${1}rem ${0} ${0}` }}
-        >
-          Select a Year
-        </label>
-        <select value={yearFilterValue} onChange={handleYearFilterValueChange}>
-          {graphXAxis.map((item) => {
-            return <option>{item.x}</option>;
-          })}
-        </select>
-        <input
-          type="button"
-          id="reset-filter"
-          name="reset-sites"
-          value="Reset Site Filter"
-          onClick={handleLegendClick}
-          style={{ cursor: "pointer", margin: `${1}rem ${0} ${0} ${0.5}rem` }}
-        />
-        <br />
-        <em>
-          To view data points more clearly, scroll with your mouse to zoom in,
-          then click and drag to move the grid.
-        </em>
-      </div>
+const dataFiltered = !siteFilterValue
+  ? antarctica
+  : dataFilter(antarctica, siteFilterValue, "Place");
+
+if (isLoading) {
+  return <div>Loading...</div>;
+}
+
+return (
+  <div>
+    <h1>Monthly mean air temperatures for Australian Antarctic Stations</h1>
+    <div style={{ padding: `${5}rem ${0} ${2}rem ${0}` }}>
       <label
-        style={{
-          position: "relative",
-          float: "left",
-          margin: `${0} ${0} ${0} ${2.4}rem`,
-        }}
+        style={{ position: "relative", padding: `${0} ${1}rem ${0} ${0}` }}
       >
-        Select a Site
+        Select a Year
       </label>
-      {!isLoading && dataFiltered.length > 0 ? (
-        <VictoryChart
-          theme={VictoryTheme.material}
-          // domain={{ y: [-80, 19] }}
+      <select value={yearFilterValue} onChange={handleYearFilterValueChange}>
+        {graphXAxis.map((item) => {
+          return <option>{item.x}</option>;
+        })}
+      </select>
+      <input
+        type="button"
+        id="reset-filter"
+        name="reset-sites"
+        value="Reset Site Filter"
+        onClick={handleLegendClick}
+        style={{ cursor: "pointer", margin: `${1}rem ${0} ${0} ${0.5}rem` }}
+      />
+      <br />
+      <em>
+        To view data points more clearly, scroll with your mouse to zoom in,
+        then click and drag to move the grid.
+      </em>
+      <br />
+      {dataIsFiltering && (
+        <h3>
+          <strong>Filtering Data...</strong>
+        </h3>
+      )}
+    </div>
+    <label
+      style={{
+        float: "left",
+        position: "relative",
+        margin: `${0} ${0} ${0} ${3}rem`,
+      }}
+    >
+      Select a Site
+    </label>
+    {!isLoading && dataFiltered.length > 0 ? (
+      <VictoryChart
+        theme={VictoryTheme.material}
+        // domain={{ y: [-80, 19] }}
+        style={{
+          background: { fill: "grey" },
+        }}
+        height={500}
+        width={2000}
+        domainPadding={20}
+        // scale={{ x: "linear", y: "log" }}
+        // padding={{ top: 40, bottom: 50, left: 40, right: 200 }}
+        theme={VictoryTheme.material}
+        containerComponent={<VictoryZoomContainer />}
+      >
+        <VictoryLegend
+          y={0}
+          x={50}
+          centerTitle
+          gutter={20}
+          orientation="horizontal"
+          borderPadding={{ right: 10 }}
           style={{
-            background: { fill: "grey" },
+            border: { stroke: "black" },
+            title: { fontSize: 10 },
+            labels: { cursor: "pointer", fontSize: 20 },
           }}
-          height={500}
-          width={2000}
-          domainPadding={20}
-          // scale={{ x: "linear", y: "log" }}
-          // padding={{ top: 40, bottom: 50, left: 40, right: 200 }}
-          theme={VictoryTheme.material}
-          containerComponent={<VictoryZoomContainer />}
+          events={[
+            {
+              target: "labels",
+              eventHandlers: {
+                onClick: handleLegendClick,
+              },
+            },
+          ]}
+          data={[
+            { name: "Mawson", symbol: { fill: "red" } },
+            { name: "Davis", symbol: { fill: "orange" } },
+            { name: "Casey", symbol: { fill: "blue" } },
+            { name: "Macquarie Island", symbol: { fill: "green" } },
+            { name: "Spit Bay", symbol: { fill: "purple" } },
+            { name: "Atlas Cove", symbol: { fill: "yellow" } },
+          ]}
+        />
+        <VictoryAxis
+          offsetY={50}
+          label="Month"
+          orientation="bottom"
+          style={{
+            tickLabels: {
+              angle: -12,
+              fontSize: 18,
+            },
+          }}
+          tickLabelComponent={<VictoryLabel dy={10} />}
+        />
+        <VictoryAxis
+          label="Temp"
+          dependentAxis
+          orientation="left"
+          style={{
+            tickLabels: {
+              fontSize: 18,
+            },
+          }}
+          tickLabelComponent={<VictoryLabel dx={-5} />}
+        />
+        <VictoryGroup
+          // offset={25}
+          // categories={{
+          //   x: [
+          //     "Mawson",
+          //     "Davis",
+          //     "Casey",
+          //     "Macquarie Island",
+          //     "Spit Bay",
+          //     "Atlas Cove",
+          //   ],
+          // }}
+          data={dataFiltered}
+          labels={({ datum }) => `${datum.Value}°C`}
+          colorScale={["red", "orange", "blue", "green", "purple", "yellow"]}
         >
-          <VictoryLegend
-            y={0}
-            x={50}
-            centerTitle
-            gutter={20}
-            orientation="horizontal"
-            borderPadding={{ right: 10 }}
+          <VictoryLine interpolation="monotoneY" />
+          <VictoryScatter
+            size={8}
+            // containerComponent={
+            //   <VictoryCursorContainer cursorLabel={({ datum }) => datum.y} />
+            // }
             style={{
-              border: { stroke: "black" },
-              title: { fontSize: 10 },
-              labels: { cursor: "pointer", fontSize: 20 },
-            }}
-            events={[
-              {
-                target: "labels",
-                eventHandlers: {
-                  onClick: handleLegendClick,
-                },
-              },
-            ]}
-            data={[
-              { name: "Mawson", symbol: { fill: "red" } },
-              { name: "Davis", symbol: { fill: "orange" } },
-              { name: "Casey", symbol: { fill: "blue" } },
-              { name: "Macquarie Island", symbol: { fill: "green" } },
-              { name: "Spit Bay", symbol: { fill: "purple" } },
-              { name: "Atlas Cove", symbol: { fill: "yellow" } },
-            ]}
-          />
-          <VictoryAxis
-            offsetY={50}
-            label="Month"
-            orientation="bottom"
-            style={{
-              tickLabels: {
-                angle: -12,
-                fontSize: 18,
-              },
-            }}
-            tickLabelComponent={<VictoryLabel dy={10} />}
-          />
-          <VictoryAxis
-            label="Temp"
-            dependentAxis
-            orientation="left"
-            style={{
-              tickLabels: {
-                fontSize: 18,
-              },
-            }}
-            tickLabelComponent={<VictoryLabel dx={-5} />}
-          />
-          <VictoryGroup
-            // offset={25}
-            // categories={{
-            //   x: [
-            //     "Mawson",
-            //     "Davis",
-            //     "Casey",
-            //     "Macquarie Island",
-            //     "Spit Bay",
-            //     "Atlas Cove",
-            //   ],
-            // }}
-            data={dataFiltered}
-            labels={({ datum }) => `${datum.Value}°C`}
-            colorScale={["red", "orange", "blue", "green", "purple", "yellow"]}
-          >
-            <VictoryLine />
-            <VictoryScatter
-              size={8}
-              // containerComponent={
-              //   <VictoryCursorContainer cursorLabel={({ datum }) => datum.y} />
-              // }
-              style={{
-                data: {
-                  fill: ({ datum }) => {
-                    const SpitBay =
-                      datum.Place === "Spit Bay" ? "purple" : "yellow";
-                    const MacquarieIsland =
-                      datum.Place === "Macquarie Island" ? "green" : SpitBay;
-                    const Casey =
-                      datum.Place === "Casey" ? "blue" : MacquarieIsland;
-                    const Davis = datum.Place === "Davis" ? "orange" : Casey;
-                    const Mawson = datum.Place === "Mawson" ? "red" : Davis;
+              data: {
+                fill: ({ datum }) => {
+                  const SpitBay =
+                    datum.Place === "Spit Bay" ? "purple" : "yellow";
+                  const MacquarieIsland =
+                    datum.Place === "Macquarie Island" ? "green" : SpitBay;
+                  const Casey =
+                    datum.Place === "Casey" ? "blue" : MacquarieIsland;
+                  const Davis = datum.Place === "Davis" ? "orange" : Casey;
+                  const Mawson = datum.Place === "Mawson" ? "red" : Davis;
 
-                    return Mawson;
-                  },
+                  return Mawson;
                 },
-                parent: { border: "1px solid #ccc" },
-                labels: { fontSize: 14, fontWeight: 500, fill: "white" },
-              }}
-              labelComponent={<VictoryLabel dy={0} textAnchor="middle" />}
-            />
-            {/* <VictoryBar
+              },
+              parent: { border: "1px solid #ccc" },
+              labels: { fontSize: 14, fontWeight: 500, fill: "white" },
+            }}
+            labelComponent={<VictoryLabel dy={0} textAnchor="middle" />}
+          />
+          {/* <VictoryBar
               labels={({ datum }) => datum.y}
               data={dataFiltered.filter((item) =>
                 item.Place.includes("Mawson")
@@ -296,17 +306,17 @@ const MonthlyMeanTemp = () => {
                 item.Place.includes("Atlas Cove")
               )}
             /> */}
-          </VictoryGroup>
-        </VictoryChart>
-      ) : (
-        <VictoryChart
-          width={2000}
-          domainPadding={10}
-          theme={VictoryTheme.material}
-        />
-      )}
-    </div>
-  );
+        </VictoryGroup>
+      </VictoryChart>
+    ) : (
+      <VictoryChart
+        width={2000}
+        domainPadding={10}
+        theme={VictoryTheme.material}
+      />
+    )}
+  </div>
+);
 };
 
 export default MonthlyMeanTemp;
